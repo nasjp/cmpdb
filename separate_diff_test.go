@@ -12,16 +12,16 @@ import (
 func TestSeparateDiff(t *testing.T) {
 	t.Parallel()
 
-	got, afterData, err := cmpdb.SeparateDiff(testJSONDiff)
+	gotBeforeData, gotAfterData, err := cmpdb.SeparateDiff(testJSONDiff)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(testBeforeJSON, got); diff != "" {
+	if diff := cmp.Diff(testBeforeJSON, gotBeforeData); diff != "" {
 		t.Errorf("beforeData mismatch (-want +got):\n%s", diff)
 	}
 
-	if diff := cmp.Diff(afterData, testAfterJSON); diff != "" {
+	if diff := cmp.Diff(gotAfterData, testAfterJSON); diff != "" {
 		t.Errorf("afterData mismatch (-want +got):\n%s", diff)
 	}
 }
