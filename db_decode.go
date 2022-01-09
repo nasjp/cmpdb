@@ -3,6 +3,7 @@ package cmpdb
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 )
 
@@ -301,4 +302,40 @@ func (d *DBDecoder) checkDelim(delim json.Delim) bool {
 	}
 
 	return false
+}
+
+func (r *Row) FieldNames() []string {
+	names := make([]string, 0, len(r.Columns))
+
+	for _, column := range r.Columns {
+		names = append(names, column.Name)
+	}
+
+	return names
+}
+
+func (r *Row) FieldValus() []string {
+	fields := make([]string, 0, len(r.Columns))
+
+	for _, column := range r.Columns {
+		fields = append(fields, column.ValueString())
+	}
+
+	return fields
+}
+
+func (c *Column) ValueString() string {
+	switch c.Value.Type {
+	case FieldTypeString:
+		return `"` + c.Value.String + `"`
+	case FieldTypeNumber:
+		return fmt.Sprintf("%f", c.Value.Number)
+	case FieldTypeBoolean:
+		return fmt.Sprintf("%t", c.Value.Boolean)
+	case FieldTypeNull:
+		return "null"
+	}
+
+	// unreachable
+	return ""
 }

@@ -2,9 +2,11 @@ package cmpdb
 
 import (
 	"database/sql"
-
-	"github.com/nasjp/cmpdb/adapter"
 )
+
+type Adapter interface {
+	Ping() error
+}
 
 type Config struct {
 	DB    *sql.DB
@@ -12,5 +14,7 @@ type Config struct {
 }
 
 type Comparer struct {
-	Adapter adapter.Adapter
+	Adapter Adapter
+	Bytes   []byte
+	DBDiff  *DBDiff
 }
