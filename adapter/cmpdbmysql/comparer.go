@@ -5,7 +5,8 @@ import (
 )
 
 func Load(cfg *cmpdb.Config) (*cmpdb.Comparer, error) {
-	mysql := &mysql{db: cfg.DB}
+	mysql := New(cfg.DB)
+
 	comparer := &cmpdb.Comparer{
 		Adapter: mysql,
 		Bytes:   cfg.Bytes,
@@ -18,7 +19,7 @@ func Load(cfg *cmpdb.Config) (*cmpdb.Comparer, error) {
 		}
 		comparer.DBDiff = dbDiff
 
-		if err := mysql.Load(dbDiff.BeforeDB); err != nil {
+		if err := comparer.Adapter.LoadFixture(dbDiff.BeforeDB); err != nil {
 			return nil, err
 		}
 	}

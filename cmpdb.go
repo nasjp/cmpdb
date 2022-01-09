@@ -5,7 +5,7 @@ import (
 )
 
 type Adapter interface {
-	Ping() error
+	LoadFixture(database *Database) error
 }
 
 type Config struct {
