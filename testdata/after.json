@@ -1,0 +1,38 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "tom",
+      "age": 21,
+      "type": "manager"
+    },
+    {
+      "id": 2,
+      "name": "cindy",
+      "age": 27,
+      "type": "engineer"
+    }
+  ],
+  "goods": [
+    {
+      "name": "macbook",
+      "user_id": 2
+    },
+    {
+      "name": "monitor",
+      "user_id": 2
+    },
+    {
+      "name": "pc",
+      "user_id": 1
+    }
+  ],
+  "posts": [
+    { "name": "good night", "user_id": 2 }, { "name": "bye", "user_id": 2 }
+  ],
+  "comments": [
+    {
+      "name": "tom"
+    }
+  ]
+}

@@ -1,34 +1,11 @@
-package jsondiff
+package cmpdb
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 )
 
-func Unmarshal(data []byte, beforeDist interface{}, afterDist interface{}) error {
-	beforeJSON, err := getJSON(data, []byte("- "), []byte("+ "))
-	if err != nil {
-		return err
-	}
-
-	afterJSON, err := getJSON(data, []byte("+ "), []byte("- "))
-	if err != nil {
-		return err
-	}
-
-	if err := json.Unmarshal(beforeJSON, beforeDist); err != nil {
-		return err
-	}
-
-	if err := json.Unmarshal(afterJSON, afterDist); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func NewDecoder(data []byte) (*json.Decoder, *json.Decoder, error) {
+func SeparateDiff(data []byte) (before []byte, after []byte, err error) {
 	beforeJSON, err := getJSON(data, []byte("- "), []byte("+ "))
 	if err != nil {
 		return nil, nil, err
@@ -39,13 +16,13 @@ func NewDecoder(data []byte) (*json.Decoder, *json.Decoder, error) {
 		return nil, nil, err
 	}
 
-	return json.NewDecoder(bytes.NewReader(beforeJSON)), json.NewDecoder(bytes.NewReader(afterJSON)), nil
+	return beforeJSON, afterJSON, nil
 }
 
 func getJSON(data []byte, targetDiffType, noTargetDiffType []byte) ([]byte, error) {
 	lineNumber := 1
 
-	beforeData := make([]byte, 0, len(data))
+	jsonData := make([]byte, 0, len(data))
 
 	offset := 0
 
@@ -58,12 +35,12 @@ func getJSON(data []byte, targetDiffType, noTargetDiffType []byte) ([]byte, erro
 
 			index := bytes.IndexByte(data[offset:], '\n')
 			if index == -1 {
-				beforeData = append(beforeData, data[offset:]...)
+				jsonData = append(jsonData, data[offset:]...)
 
-				return beforeData, nil
+				return jsonData, nil
 			}
 
-			beforeData = append(beforeData, data[offset:offset+index]...)
+			jsonData = append(jsonData, data[offset:offset+index+1]...)
 			offset = offset + index + 1
 			lineNumber++
 		case
@@ -72,7 +49,7 @@ func getJSON(data []byte, targetDiffType, noTargetDiffType []byte) ([]byte, erro
 
 			index := bytes.IndexByte(data[offset:], '\n')
 			if index == -1 {
-				return beforeData, nil
+				return jsonData, nil
 			}
 
 			offset = offset + index + 1
@@ -82,7 +59,7 @@ func getJSON(data []byte, targetDiffType, noTargetDiffType []byte) ([]byte, erro
 		}
 
 		if offset >= len(data) {
-			return beforeData, nil
+			return jsonData, nil
 		}
 
 	}

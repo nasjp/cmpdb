@@ -3,14 +3,9 @@ package cmpdb_test
 import (
 	"testing"
 
-	_ "embed"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/nasjp/cmpdb"
 )
-
-//go:embed testdata/diff.jsondiff
-var testJSONDiff []byte
 
 func TestParseFromJSONDiff(t *testing.T) {
 	got, err := cmpdb.ParseFromJSONDiff(testJSONDiff)

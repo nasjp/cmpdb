@@ -4,28 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-
-	"github.com/nasjp/cmpdb/jsondiff"
 )
-
-func ParseFromJSONDiff(data []byte) (*DBDiff, error) {
-	beforeJSONDec, afterJSONDec, err := jsondiff.NewDecoder(data)
-	if err != nil {
-		return nil, err
-	}
-
-	beforeDB, err := (&dbDecoder{dec: beforeJSONDec}).decode()
-	if err != nil {
-		return nil, err
-	}
-
-	afterDB, err := (&dbDecoder{dec: afterJSONDec}).decode()
-	if err != nil {
-		return nil, err
-	}
-
-	return &DBDiff{BeforeDB: beforeDB, AfterDB: afterDB}, nil
-}
 
 type DBDiff struct {
 	BeforeDB *Database
@@ -66,13 +45,17 @@ type Value struct {
 	Type    ColumnType
 }
 
-type dbDecoder struct {
+type DBDecoder struct {
 	dec       *json.Decoder
 	currentTk json.Token
 	finished  bool
 }
 
-func (d *dbDecoder) decode() (*Database, error) {
+func NewDBDecoder(dec *json.Decoder) *DBDecoder {
+	return &DBDecoder{dec: dec}
+}
+
+func (d *DBDecoder) Decode() (*Database, error) {
 	if err := d.next(); err != nil {
 		return nil, err
 	}
@@ -93,15 +76,15 @@ func (d *dbDecoder) decode() (*Database, error) {
 	return &Database{Tables: tables}, nil
 }
 
-func (d *dbDecoder) isStart() bool {
+func (d *DBDecoder) isStart() bool {
 	return d.checkDelim('{')
 }
 
-func (d *dbDecoder) isEnd() bool {
+func (d *DBDecoder) isEnd() bool {
 	return d.checkDelim('}')
 }
 
-func (d *dbDecoder) decodeTables() ([]*Table, error) {
+func (d *DBDecoder) decodeTables() ([]*Table, error) {
 	tables := []*Table{}
 
 	for {
@@ -128,7 +111,7 @@ func (d *dbDecoder) decodeTables() ([]*Table, error) {
 	return tables, nil
 }
 
-func (d *dbDecoder) decodeTable() (*Table, error) {
+func (d *DBDecoder) decodeTable() (*Table, error) {
 	name, err := d.decodeTableName()
 	if err != nil {
 		return nil, err
@@ -142,15 +125,7 @@ func (d *dbDecoder) decodeTable() (*Table, error) {
 	return &Table{Name: name, Rows: rows}, nil
 }
 
-func (d *dbDecoder) decodeTableName() (string, error) {
-	// if err := d.next(); err != nil {
-	// 	return "", err
-	// }
-
-	// if d.empty() {
-	// 	return "", errors.New("unexpected cmpdb format")
-	// }
-
+func (d *DBDecoder) decodeTableName() (string, error) {
 	name, ok := (d.currentTk).(string)
 	if !ok {
 		return "", errors.New("unexpected cmpdb format, table name must be string")
@@ -159,7 +134,7 @@ func (d *dbDecoder) decodeTableName() (string, error) {
 	return name, nil
 }
 
-func (d *dbDecoder) decodeRows() ([]*Row, error) {
+func (d *DBDecoder) decodeRows() ([]*Row, error) {
 	if err := d.next(); err != nil {
 		return nil, err
 	}
@@ -202,23 +177,15 @@ func (d *dbDecoder) decodeRows() ([]*Row, error) {
 	return rows, nil
 }
 
-func (d *dbDecoder) isRowsStart() bool {
+func (d *DBDecoder) isRowsStart() bool {
 	return d.checkDelim('[')
 }
 
-func (d *dbDecoder) isRowsEnd() bool {
+func (d *DBDecoder) isRowsEnd() bool {
 	return d.checkDelim(']')
 }
 
-func (d *dbDecoder) decodeRow() (*Row, error) {
-	// if err := d.next(); err != nil {
-	// 	return nil, err
-	// }
-
-	// if d.empty() {
-	// 	return nil, errors.New("unexpected cmpdb format")
-	// }
-
+func (d *DBDecoder) decodeRow() (*Row, error) {
 	if !d.isRowStart() {
 		return nil, errors.New("unexpected cmpdb format, row must be object")
 	}
@@ -254,15 +221,15 @@ func (d *dbDecoder) decodeRow() (*Row, error) {
 	return &Row{Columns: columns}, nil
 }
 
-func (d *dbDecoder) isRowStart() bool {
+func (d *DBDecoder) isRowStart() bool {
 	return d.checkDelim('{')
 }
 
-func (d *dbDecoder) isRowEnd() bool {
+func (d *DBDecoder) isRowEnd() bool {
 	return d.checkDelim('}')
 }
 
-func (d *dbDecoder) decodeColumn() (*Column, error) {
+func (d *DBDecoder) decodeColumn() (*Column, error) {
 	name, err := d.decodeColumnName()
 	if err != nil {
 		return nil, err
@@ -276,15 +243,7 @@ func (d *dbDecoder) decodeColumn() (*Column, error) {
 	return &Column{Name: name, Value: value}, nil
 }
 
-func (d *dbDecoder) decodeColumnName() (string, error) {
-	// if err := d.next(); err != nil {
-	// 	return "", err
-	// }
-
-	// if d.empty() {
-	// 	return "", errors.New("unexpected cmpdb format")
-	// }
-
+func (d *DBDecoder) decodeColumnName() (string, error) {
 	name, ok := (d.currentTk).(string)
 	if !ok {
 		return "", errors.New("unexpected cmpdb format, column name must be string")
@@ -293,7 +252,7 @@ func (d *dbDecoder) decodeColumnName() (string, error) {
 	return name, nil
 }
 
-func (d *dbDecoder) decodeColumnValue() (*Value, error) {
+func (d *DBDecoder) decodeColumnValue() (*Value, error) {
 	if err := d.next(); err != nil {
 		return nil, err
 	}
@@ -314,11 +273,11 @@ func (d *dbDecoder) decodeColumnValue() (*Value, error) {
 	}
 }
 
-func (d *dbDecoder) empty() bool {
+func (d *DBDecoder) empty() bool {
 	return d.currentTk == nil
 }
 
-func (d *dbDecoder) next() error {
+func (d *DBDecoder) next() error {
 	token, err := d.dec.Token()
 	if err != nil {
 		if err != io.EOF {
@@ -335,7 +294,7 @@ func (d *dbDecoder) next() error {
 	return nil
 }
 
-func (d *dbDecoder) checkDelim(delim json.Delim) bool {
+func (d *DBDecoder) checkDelim(delim json.Delim) bool {
 	tk, ok := (d.currentTk).(json.Delim)
 	if ok && tk == delim {
 		return true
